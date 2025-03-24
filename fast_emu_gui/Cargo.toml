@@ -8,6 +8,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 eframe = "0.27"
+crossbeam = "0.8.4" 
+once_cell = "1.10"  
 
 [dependencies.libc]
 version = "0.2"
