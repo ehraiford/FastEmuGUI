@@ -1131,6 +1131,7 @@ name = "fast_emu_gui"
 version = "0.1.0"
 dependencies = [
  "eframe",
+ "libc",
 ]
 
 [[package]]

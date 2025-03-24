@@ -1,5 +1,8 @@
 use eframe::egui;
 use std::collections::HashMap;
+use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
+use std::sync::Mutex;
 
 #[derive(Default)]
 struct Register {
@@ -67,7 +70,21 @@ impl eframe::App for Debugger {
     }
 }
 
-fn main() -> Result<(), eframe::Error> {
+#[unsafe(no_mangle)]
+pub extern "C" fn start_debugger() {
     let options = eframe::NativeOptions::default();
-    eframe::run_native("FastEmuGUI", options, Box::new(|_cc| Box::new(Debugger::new())))
+    let debugger = Debugger::new();
+    let _ = eframe::run_native("FastEmuGUI", options, Box::new(|_cc| Box::new(debugger)));
+   
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+#[cfg(test)]
+mod test {
+    use crate::*;
+    
 }
