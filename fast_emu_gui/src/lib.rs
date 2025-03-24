@@ -1,34 +1,43 @@
-use eframe::egui;
-use std::{collections::HashMap, sync::{Arc, Mutex}};
-use std::ffi::CStr;
-use std::os::raw::c_char;
 use crossbeam::channel;
+use eframe::egui;
+use internal_commands::InternalCommand;
 use once_cell::sync::Lazy;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
+pub mod external_commands;
+pub mod internal_commands;
 
 struct RegisterSet {
-    set_name: String,
     display_format: DisplayFormat,
     display_precision: u8,
     registers: HashMap<String, u64>,
 }
 
 impl RegisterSet {
-    pub fn new(set_name: String, registers: HashMap<String, u64>, display_format: DisplayFormat, display_precision: u8) -> Self {
+    pub fn new(
+        registers: HashMap<String, u64>,
+        display_format: DisplayFormat,
+        display_precision: u8,
+    ) -> Self {
         Self {
-            set_name,
             display_format,
             display_precision,
             registers,
         }
     }
-    pub fn get_register_string(self, reg_name: String) -> Option<String> {
-        self.registers.get(&reg_name)
-        .and_then(|val| Some(self.display_format.format_value(*val, self.display_precision as usize)))
-    }
     pub fn get_register_strings(&self) -> Vec<String> {
         self.registers
-        .iter()
-        .map(|(name, val)| format!("{name}: {}", self.display_format.format_value(*val, self.display_precision as usize))).collect()
+            .iter()
+            .map(|(name, val)| {
+                format!(
+                    "{name}: {}",
+                    self.display_format
+                        .format_value(*val, self.display_precision as usize)
+                )
+            })
+            .collect()
     }
 }
 
@@ -72,12 +81,7 @@ fn test_data() -> EmuData {
 
     register_sets.insert(
         "General Purpose".to_string(),
-        RegisterSet::new(
-            "General Purpose".to_string(),
-            registers,
-            DisplayFormat::Hex,
-            8,
-        ),
+        RegisterSet::new(registers, DisplayFormat::Hex, 8),
     );
 
     EmuData { register_sets }
@@ -106,16 +110,30 @@ impl eframe::App for App {
 
 static EMU_DATA: Lazy<Arc<Mutex<EmuData>>> = Lazy::new(|| Arc::new(Mutex::new(test_data())));
 
-static SENDER: Lazy<channel::Sender<(String, u64)>> = Lazy::new(|| {
-    let (sender, receiver): (channel::Sender<(String, u64)>, channel::Receiver<(String, u64)>) = channel::unbounded();
-    
+static SENDER: Lazy<channel::Sender<InternalCommand>> = Lazy::new(|| {
+    let (sender, receiver): (
+        channel::Sender<InternalCommand>,
+        channel::Receiver<InternalCommand>,
+    ) = channel::unbounded();
+
     std::thread::spawn(move || {
-        while let Ok((name, value)) = receiver.recv() {
+        while let Ok(command) = receiver.recv() {
             let mut emu_data = EMU_DATA.lock().unwrap();
 
-            for (_, set) in &mut emu_data.register_sets {
-                if let Some(reg) = set.registers.get_mut(&name) {
-                    *reg = value;
+            match command {
+                InternalCommand::UpdateRegisterValue {
+                    group_name,
+                    register_name,
+                    value,
+                } => {
+                    let Some(register) = emu_data
+                        .register_sets
+                        .get_mut(&group_name)
+                        .and_then(|set| set.registers.get_mut(&register_name))
+                    else {
+                        return;
+                    };
+                    *register = value;
                 }
             }
         }
@@ -123,17 +141,3 @@ static SENDER: Lazy<channel::Sender<(String, u64)>> = Lazy::new(|| {
 
     sender
 });
-
-#[unsafe(no_mangle)]
-pub extern "C" fn start_fast_emu_gui() {
-    let options = eframe::NativeOptions::default();
-    let emu_data = Arc::clone(&EMU_DATA);
-    let app = App { state: emu_data };
-    let _ = eframe::run_native("FastEmuGUI", options, Box::new(|_cc| Box::new(app)));
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn update_register_value(name: *const c_char, value: u64) {
-    let name = unsafe { CStr::from_ptr(name) }.to_str().unwrap();
-    let _ = SENDER.send((name.to_string(), value));
-}
