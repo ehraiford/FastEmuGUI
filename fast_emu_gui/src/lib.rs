@@ -44,7 +44,7 @@ impl Default for Register {
 
 struct RegisterSet {
     registers: HashMap<String, Register>,
-        }
+}
 
 impl RegisterSet {
     pub fn new(registers: HashMap<String, Register>) -> Self {
@@ -99,23 +99,35 @@ struct EmuData {
 }
 
 impl EmuData {
-    fn new() -> Self {
+    pub fn _new() -> Self {
         Self {
             register_sets: HashMap::new(),
         }
+    }
+    pub fn get_mut_register(
+        &mut self,
+        group_name: &str,
+        register_name: &str,
+    ) -> Option<&mut Register> {
+        self.register_sets
+            .get_mut(group_name)
+            .and_then(|set| set.registers.get_mut(register_name))
     }
 }
 
 fn test_data() -> EmuData {
     let mut register_sets = HashMap::new();
     let mut registers = HashMap::new();
-    registers.insert("R1".to_string(), 0x1234);
-    registers.insert("R2".to_string(), 0x5678);
-
-    register_sets.insert(
-        "General Purpose".to_string(),
-        RegisterSet::new(registers, DisplayFormat::Hex, 8),
+    registers.insert(
+        "R1".to_string(),
+        Register::new(0x1234, DisplayFormat::Hex, 16),
     );
+    registers.insert(
+        "R2".to_string(),
+        Register::new(0x5678, DisplayFormat::Octal, 16),
+    );
+
+    register_sets.insert("General Purpose".to_string(), RegisterSet::new(registers));
 
     EmuData { register_sets }
 }
@@ -159,14 +171,19 @@ static SENDER: Lazy<channel::Sender<InternalCommand>> = Lazy::new(|| {
                     register_name,
                     value,
                 } => {
-                    let Some(register) = emu_data
-                        .register_sets
-                        .get_mut(&group_name)
-                        .and_then(|set| set.registers.get_mut(&register_name))
-                    else {
-                        return;
-                    };
-                    *register = value;
+                    if let Some(reg) = emu_data.get_mut_register(&group_name, &register_name) {
+                        reg.value = value;
+                    }
+                }
+
+                InternalCommand::UpdateRegisterFormat {
+                    group_name,
+                    register_name,
+                    new_format,
+                } => {
+                    if let Some(reg) = emu_data.get_mut_register(&group_name, &register_name) {
+                        reg.update_display_format(new_format);
+                    }
                 }
             }
         }
