@@ -9,32 +9,55 @@ use std::{
 pub mod external_commands;
 pub mod internal_commands;
 
-struct RegisterSet {
+struct Register {
+    value: u64,
     display_format: DisplayFormat,
-    display_precision: u8,
-    registers: HashMap<String, u64>,
+    bit_width: u8,
+    necessary_precision_for_format: u8,
 }
 
-impl RegisterSet {
-    pub fn new(
-        registers: HashMap<String, u64>,
-        display_format: DisplayFormat,
-        display_precision: u8,
-    ) -> Self {
+impl Register {
+    pub fn new(value: u64, display_format: DisplayFormat, bit_width: u8) -> Self {
         Self {
+            value,
+            necessary_precision_for_format: display_format.get_required_display_width(bit_width),
             display_format,
-            display_precision,
-            registers,
+            bit_width,
         }
+    }
+    pub fn update_display_format(&mut self, new_format: DisplayFormat) {
+        self.necessary_precision_for_format = new_format.get_required_display_width(self.bit_width);
+        self.display_format = new_format;
+    }
+}
+
+impl Default for Register {
+    fn default() -> Self {
+        Self {
+            value: Default::default(),
+            display_format: DisplayFormat::Hex,
+            bit_width: 8,
+            necessary_precision_for_format: 2,
+        }
+    }
+}
+
+struct RegisterSet {
+    registers: HashMap<String, Register>,
+        }
+
+impl RegisterSet {
+    pub fn new(registers: HashMap<String, Register>) -> Self {
+        Self { registers }
     }
     pub fn get_register_strings(&self) -> Vec<String> {
         self.registers
             .iter()
-            .map(|(name, val)| {
+            .map(|(name, reg)| {
                 format!(
                     "{name}: {}",
-                    self.display_format
-                        .format_value(*val, self.display_precision as usize)
+                    reg.display_format
+                        .format_value(reg.value, reg.necessary_precision_for_format as usize)
                 )
             })
             .collect()
@@ -42,7 +65,8 @@ impl RegisterSet {
 }
 
 #[derive(Default)]
-enum DisplayFormat {
+#[repr(C)]
+pub enum DisplayFormat {
     #[default]
     Hex,
     Binary,
@@ -57,6 +81,15 @@ impl DisplayFormat {
             DisplayFormat::Binary => format!("0b{:0>width$b}", value, width = display_precision),
             DisplayFormat::Decimal => format!("{:0>width$}", value, width = display_precision),
             DisplayFormat::Octal => format!("0o{:0>width$o}", value, width = display_precision),
+        }
+    }
+    /// Returns the number of characters needed to display the max value of a register of the given width.
+    pub fn get_required_display_width(&self, bit_width: u8) -> u8 {
+        match self {
+            DisplayFormat::Hex => bit_width.div_ceil(4),
+            DisplayFormat::Binary => bit_width,
+            DisplayFormat::Decimal => bit_width.div_ceil(3),
+            DisplayFormat::Octal => bit_width.div_ceil(3),
         }
     }
 }
