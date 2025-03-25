@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build and Run with C++ Test",
+            "type": "shell",
+            "command": "cd fast_emu_gui && cargo build --release && g++ main.cpp -o main -L./target/release -lfast_emu_gui -Wl,-rpath,./target/release && ./main",
+            "problemMatcher": [],
+            "group": "build",
+        }
+    ]
+}

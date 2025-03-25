@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
-        "eframe"
+        "eframe",
+        "repr"
     ],
     "editor.formatOnSave": true,
     "[rust]": {
