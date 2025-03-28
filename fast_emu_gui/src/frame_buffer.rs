@@ -26,12 +26,6 @@ impl FrameBuffer {
             });
         }
 
-        for value in buffer {
-            if *value != 255 {
-                // println!("value: {}", value)
-            }
-        }
-
         self.image = ColorImage::from_rgba_unmultiplied([self.width, self.height], buffer);
 
         Ok(())

@@ -1,4 +1,3 @@
-use core::error;
 use crossbeam::channel;
 use eframe::egui::{self, TextureOptions};
 use frame_buffer::FrameBuffer;
@@ -106,33 +105,43 @@ static SENDER: Lazy<channel::Sender<InternalCommand>> = Lazy::new(|| {
     sender
 });
 
-use eframe::egui::{ColorImage, TextureHandle};
-
 struct App {
     state: Arc<Mutex<EmuData>>,
 }
 
-impl App {}
+impl App {
+    fn render_ui(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        let state = self.state.lock().unwrap();
 
-impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Registers");
-            let state = self.state.lock().unwrap();
-            for (set_name, set) in &state.register_sets {
+        for (set_name, set) in &state.register_sets {
+            ui.group(|ui| {
                 ui.label(set_name);
+                ui.separator();
                 for string in &set.get_register_strings() {
-                    ui.label(string);
+                    ui.monospace(string);
                 }
-            }
+            });
+        }
 
-            if let Some(frame_buffer) = &state.frame_buffer {
+        if let Some(frame_buffer) = &state.frame_buffer {
+            ui.group(|ui| {
+                ui.label("Frame Buffer:");
+                ui.separator();
                 ui.image(&ctx.load_texture(
                     "Frame Buffer",
                     frame_buffer.get_image().clone(),
                     TextureOptions::default(),
                 ));
-            }
+            });
+        }
+    }
+}
+
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.separator();
+            self.render_ui(ui, ctx);
         });
 
         ctx.request_repaint();

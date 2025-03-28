@@ -19,6 +19,7 @@ void emulator_loop()
         update_register_format("General Purpose", "R1", static_cast<DisplayFormat>(i % 4));
         update_register_format("General Purpose", "R2", static_cast<DisplayFormat>(i % 4));
     }
+    std::this_thread::sleep_for(std::chrono::microseconds(100));
 }
 
 int main()
