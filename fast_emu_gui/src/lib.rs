@@ -6,8 +6,9 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
-pub mod external_commands;
-pub mod internal_commands;
+mod external_commands;
+mod frame_buffer;
+mod internal_commands;
 
 struct Register {
     value: u64,
