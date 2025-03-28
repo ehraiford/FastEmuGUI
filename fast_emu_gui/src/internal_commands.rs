@@ -1,6 +1,6 @@
 use crate::DisplayFormat;
 
-pub(crate) enum InternalCommand {
+pub(crate) enum InternalCommand<'a> {
     UpdateRegisterValue {
         group_name: String,
         register_name: String,
@@ -10,5 +10,8 @@ pub(crate) enum InternalCommand {
         group_name: String,
         register_name: String,
         new_format: DisplayFormat,
+    },
+    UpdateFrameBuffer {
+        buffer: &'a [u8],
     },
 }

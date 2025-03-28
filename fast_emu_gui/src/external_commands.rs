@@ -1,4 +1,3 @@
-use crate::frame_buffer::run;
 use crate::internal_commands::InternalCommand;
 use crate::{App, DisplayFormat, EMU_DATA, SENDER};
 use std::ffi::CStr;
@@ -7,7 +6,6 @@ use std::sync::Arc;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn start_fast_emu_gui() {
-    pollster::block_on(run(100, 100, wgpu::PowerPreference::HighPerformance));
     let options = eframe::NativeOptions::default();
     let emu_data = Arc::clone(&EMU_DATA);
     let app = App { state: emu_data };
@@ -41,4 +39,10 @@ pub extern "C" fn update_register_format(
         register_name: register_name.to_string(),
         new_format: new_format,
     });
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn update_frame_buffer(data: *const u8, len: usize) {
+    let buffer = unsafe { std::slice::from_raw_parts(data, len) };
+    let _ = SENDER.send(InternalCommand::UpdateFrameBuffer { buffer });
 }
