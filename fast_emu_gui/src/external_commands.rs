@@ -13,11 +13,7 @@ pub extern "C" fn start_fast_emu_gui() {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn update_register_value(
-    group_name: *const c_char,
-    register_name: *const c_char,
-    value: u64,
-) {
+pub extern "C" fn update_register_value(group_name: *const c_char, register_name: *const c_char, value: u64) {
     let group_name = unsafe { CStr::from_ptr(group_name) }.to_str().unwrap();
     let register_name = unsafe { CStr::from_ptr(register_name) }.to_str().unwrap();
     let _ = SENDER.send(InternalCommand::UpdateRegisterValue {

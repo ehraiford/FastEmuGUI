@@ -20,7 +20,6 @@ impl Register {
         self.necessary_precision_for_format = new_format.get_required_display_width(self.bit_width);
         self.display_format = new_format;
     }
-
 }
 
 impl Default for Register {

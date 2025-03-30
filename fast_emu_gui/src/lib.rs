@@ -22,15 +22,9 @@ struct EmuData {
 
 impl EmuData {
     pub fn _new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self { ..Default::default() }
     }
-    pub fn get_mut_register(
-        &mut self,
-        group_name: &str,
-        register_name: &str,
-    ) -> Option<&mut Register> {
+    pub fn get_mut_register(&mut self, group_name: &str, register_name: &str) -> Option<&mut Register> {
         self.register_sets
             .get_mut(group_name)
             .and_then(|set| set.registers.get_mut(register_name))
@@ -38,31 +32,23 @@ impl EmuData {
 
     fn run_command(&mut self, command: InternalCommand) {
         match command {
-            InternalCommand::UpdateRegisterValue {
-                group_name,
-                register_name,
-                value,
-            } => {
+            InternalCommand::UpdateRegisterValue { group_name, register_name, value } => {
                 if let Some(reg) = self.get_mut_register(&group_name, &register_name) {
                     reg.value = value;
                 }
-            }
-            InternalCommand::UpdateRegisterFormat {
-                group_name,
-                register_name,
-                new_format,
-            } => {
+            },
+            InternalCommand::UpdateRegisterFormat { group_name, register_name, new_format } => {
                 if let Some(reg) = self.get_mut_register(&group_name, &register_name) {
                     reg.update_display_format(new_format);
                 }
-            }
+            },
             InternalCommand::UpdateFrameBuffer { buffer } => {
                 if let Some(ref mut frame_buffer) = self.frame_buffer {
                     if let Err(error) = frame_buffer.update_frame_buffer(buffer) {
                         println!("{}", error);
                     }
                 }
-            }
+            },
         }
     }
 }
@@ -70,14 +56,8 @@ impl EmuData {
 fn test_data() -> EmuData {
     let mut register_sets = HashMap::new();
     let mut registers = HashMap::new();
-    registers.insert(
-        "R1".to_string(),
-        Register::new(0x1234, DisplayFormat::Hex, 16),
-    );
-    registers.insert(
-        "R2".to_string(),
-        Register::new(0x5678, DisplayFormat::Octal, 16),
-    );
+    registers.insert("R1".to_string(), Register::new(0x1234, DisplayFormat::Hex, 16));
+    registers.insert("R2".to_string(), Register::new(0x5678, DisplayFormat::Octal, 16));
 
     register_sets.insert("General Purpose".to_string(), RegisterSet::new(registers));
 
@@ -90,10 +70,8 @@ fn test_data() -> EmuData {
 static EMU_DATA: Lazy<Arc<Mutex<EmuData>>> = Lazy::new(|| Arc::new(Mutex::new(test_data())));
 
 static SENDER: Lazy<channel::Sender<InternalCommand>> = Lazy::new(|| {
-    let (sender, receiver): (
-        channel::Sender<InternalCommand>,
-        channel::Receiver<InternalCommand>,
-    ) = channel::unbounded();
+    let (sender, receiver): (channel::Sender<InternalCommand>, channel::Receiver<InternalCommand>) =
+        channel::unbounded();
 
     std::thread::spawn(move || {
         while let Ok(command) = receiver.recv() {
@@ -155,10 +133,9 @@ enum FastEmuGUIError {
 impl Display for FastEmuGUIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FastEmuGUIError::MismatchedBufferSize { expected, received } => write!(
-                f,
-                "Received buffer of length: {received}. Expected length: {expected}."
-            ),
+            FastEmuGUIError::MismatchedBufferSize { expected, received } => {
+                write!(f, "Received buffer of length: {received}. Expected length: {expected}.")
+            },
         }
     }
 }
