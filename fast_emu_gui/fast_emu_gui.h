@@ -1,12 +1,13 @@
-extern "C"
-{
-    typedef enum
-    {
-        Hex = 0,
-        Binary = 1,
-        Decimal = 2,
-        Octal = 3,
-    } DisplayFormat;
+#include <cstddef>
+#include <cstdint>
+
+extern "C" {
+typedef enum {
+	Hex = 0,
+	Binary = 1,
+	Decimal = 2,
+	Octal = 3,
+} DisplayFormat;
 }
 
 extern "C" void start_fast_emu_gui();
