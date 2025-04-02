@@ -1,71 +1,19 @@
 use crossbeam::channel;
 use eframe::egui::{self, TextureOptions};
-use frame_buffer::FrameBuffer;
+use emu_data::{EmuData, test_data};
 use internal_commands::InternalCommand;
 use once_cell::sync::Lazy;
-use registers::{DisplayFormat, Register, RegisterSet};
+use registers::DisplayFormat;
 use std::{
-    collections::HashMap,
     fmt::Display,
     sync::{Arc, Mutex},
 };
-mod external_commands;
-mod frame_buffer;
-mod internal_commands;
-mod registers;
-
-#[derive(Default)]
-struct EmuData {
-    register_sets: HashMap<String, RegisterSet>,
-    frame_buffer: Option<FrameBuffer>,
-}
-
-impl EmuData {
-    pub fn _new() -> Self {
-        Self { ..Default::default() }
-    }
-    pub fn get_mut_register(&mut self, group_name: &str, register_name: &str) -> Option<&mut Register> {
-        self.register_sets
-            .get_mut(group_name)
-            .and_then(|set| set.registers.get_mut(register_name))
-    }
-
-    fn run_command(&mut self, command: InternalCommand) {
-        match command {
-            InternalCommand::UpdateRegisterValue { group_name, register_name, value } => {
-                if let Some(reg) = self.get_mut_register(&group_name, &register_name) {
-                    reg.value = value;
-                }
-            },
-            InternalCommand::UpdateRegisterFormat { group_name, register_name, new_format } => {
-                if let Some(reg) = self.get_mut_register(&group_name, &register_name) {
-                    reg.update_display_format(new_format);
-                }
-            },
-            InternalCommand::UpdateFrameBuffer { buffer } => {
-                if let Some(ref mut frame_buffer) = self.frame_buffer {
-                    if let Err(error) = frame_buffer.update_frame_buffer(buffer) {
-                        println!("{}", error);
-                    }
-                }
-            },
-        }
-    }
-}
-
-fn test_data() -> EmuData {
-    let mut register_sets = HashMap::new();
-    let mut registers = HashMap::new();
-    registers.insert("R1".to_string(), Register::new(0x1234, DisplayFormat::Hex, 16));
-    registers.insert("R2".to_string(), Register::new(0x5678, DisplayFormat::Octal, 16));
-
-    register_sets.insert("General Purpose".to_string(), RegisterSet::new(registers));
-
-    EmuData {
-        register_sets,
-        frame_buffer: Some(FrameBuffer::new(100, 100)),
-    }
-}
+mod emu_data;
+pub mod external_commands;
+pub mod frame_buffer;
+pub mod internal_commands;
+pub mod registers;
+pub mod yaml;
 
 static EMU_DATA: Lazy<Arc<Mutex<EmuData>>> = Lazy::new(|| Arc::new(Mutex::new(test_data())));
 
@@ -129,14 +77,30 @@ impl eframe::App for App {
 #[derive(Debug)]
 enum FastEmuGUIError {
     MismatchedBufferSize { expected: usize, received: usize },
+    IOError { message: String },
+    SerdeError { message: String },
 }
+impl std::error::Error for FastEmuGUIError {}
+
 impl Display for FastEmuGUIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FastEmuGUIError::MismatchedBufferSize { expected, received } => {
                 write!(f, "Received buffer of length: {received}. Expected length: {expected}.")
             },
+            FastEmuGUIError::IOError { message } | FastEmuGUIError::SerdeError { message } => write!(f, "{}", message),
         }
     }
 }
-impl std::error::Error for FastEmuGUIError {}
+
+use std::convert::From;
+impl From<std::io::Error> for FastEmuGUIError {
+    fn from(error: std::io::Error) -> Self {
+        FastEmuGUIError::IOError { message: format!("{}", error) }
+    }
+}
+impl From<serde_yaml::Error> for FastEmuGUIError {
+    fn from(error: serde_yaml::Error) -> Self {
+        FastEmuGUIError::SerdeError { message: format!("{}", error) }
+    }
+}

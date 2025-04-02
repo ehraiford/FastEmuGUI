@@ -1,0 +1,15 @@
+Name: My Emulator GUI
+ClockFrequency: 4.194304 MHz
+Registers: 
+  GeneralPurpose:
+    - R1: 20
+    - R2: 0
+    - R3: 
+    - R4: 200
+  Control:
+    - SP: 256
+    - PC: 0
+Instructions:
+  - NOP: 1
+  - LD [HL]: 3
+  - SRA A: 2

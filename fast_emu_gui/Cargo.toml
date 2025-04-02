@@ -7,9 +7,11 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-eframe = "0.27"
+serde = "1"
+serde_yaml = "0.9"
+eframe = "0.31.1"
 crossbeam = "0.8.4"
-once_cell = "1.10"
+once_cell = "1.21.3"
 
 [dependencies.libc]
 version = "0.2"

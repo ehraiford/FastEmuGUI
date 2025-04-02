@@ -9,7 +9,7 @@ pub extern "C" fn start_fast_emu_gui() {
     let options = eframe::NativeOptions::default();
     let emu_data = Arc::clone(&EMU_DATA);
     let app = App { state: emu_data };
-    let _ = eframe::run_native("FastEmuGUI", options, Box::new(|_cc| Box::new(app)));
+    let _ = eframe::run_native("FastEmuGUI", options, Box::new(|_cc| Ok(Box::new(app))));
 }
 
 #[unsafe(no_mangle)]
