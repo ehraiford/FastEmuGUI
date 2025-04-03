@@ -41,6 +41,7 @@ impl RegisterSet {
     pub fn new(registers: HashMap<String, Register>) -> Self {
         Self { registers }
     }
+
     pub fn get_register_strings(&self) -> Vec<String> {
         self.registers
             .iter()

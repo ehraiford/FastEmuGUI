@@ -7,6 +7,7 @@ use crate::registers::{DisplayFormat, Register, RegisterSet};
 #[derive(Default)]
 pub struct EmuData {
     name: String,
+    frequency: Option<Frequency>,
     pub(crate) register_sets: HashMap<String, RegisterSet>,
     pub(crate) frame_buffer: Option<FrameBuffer>,
 }
@@ -56,5 +57,34 @@ pub fn test_data() -> EmuData {
         name: String::from("FastEmuGUI"),
         register_sets,
         frame_buffer: Some(FrameBuffer::new(100, 100)),
+        frequency: None,
+    }
+}
+
+#[derive(Debug)]
+pub enum Frequency {
+    KHz(f32),
+    MHz(f32),
+    GHz(f32),
+}
+
+impl Frequency {
+    pub fn deserialize_from_value(value: &serde_yaml::Value) -> Option<Frequency> {
+        value
+            .get("ClockFrequency")
+            .and_then(|value| value.as_str())
+            .and_then(Frequency::deserialize_from_string)
+    }
+
+    fn deserialize_from_string(string: &str) -> Option<Frequency> {
+        if let Some(value) = string.strip_suffix(" KHz") {
+            value.parse::<f32>().map(Frequency::KHz).ok()
+        } else if let Some(value) = string.strip_suffix(" MHz") {
+            value.parse::<f32>().map(Frequency::MHz).ok()
+        } else if let Some(value) = string.strip_suffix(" GHz") {
+            value.parse::<f32>().map(Frequency::GHz).ok()
+        } else {
+            None
+        }
     }
 }
