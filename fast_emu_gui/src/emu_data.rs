@@ -1,13 +1,14 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 
 use crate::InternalCommand;
-use crate::frame_buffer::FrameBuffer;
+use crate::frame_buffer::{FrameBuffer, MutexWrapper};
 use crate::registers::{DisplayFormat, Register, RegisterSet};
 
 #[derive(Default)]
 pub struct EmuData {
     name: String,
-    frequency: Option<Frequency>,
+    pub(crate) target_frequency: Option<Frequency>,
     pub(crate) register_sets: HashMap<String, RegisterSet>,
     pub(crate) frame_buffer: Option<FrameBuffer>,
 }
@@ -34,30 +35,15 @@ impl EmuData {
                     reg.update_display_format(new_format);
                 }
             },
-            InternalCommand::UpdateFrameBuffer { buffer } => {
+            InternalCommand::UpdateFrameBuffer { buffer, mutex } => {
                 if let Some(ref mut frame_buffer) = self.frame_buffer {
-                    if let Err(error) = frame_buffer.update_frame_buffer(buffer) {
+                    if let Err(error) = frame_buffer.update_frame_buffer(buffer, mutex) {
                         println!("{}", error);
                     }
                 }
             },
+            InternalCommand::SetFrequency(frequency) => self.target_frequency = Some(frequency),
         }
-    }
-}
-
-pub fn test_data() -> EmuData {
-    let mut register_sets = HashMap::new();
-    let mut registers = HashMap::new();
-    registers.insert("R1".to_string(), Register::new(0x1234, DisplayFormat::Hex, 16));
-    registers.insert("R2".to_string(), Register::new(0x5678, DisplayFormat::Octal, 16));
-
-    register_sets.insert("General Purpose".to_string(), RegisterSet::new(registers));
-
-    EmuData {
-        name: String::from("FastEmuGUI"),
-        register_sets,
-        frame_buffer: Some(FrameBuffer::new(100, 100)),
-        frequency: None,
     }
 }
 
@@ -85,6 +71,16 @@ impl Frequency {
             value.parse::<f32>().map(Frequency::GHz).ok()
         } else {
             None
+        }
+    }
+}
+
+impl Display for Frequency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Frequency::KHz(val) => write!(f, "{val} KHz"),
+            Frequency::MHz(val) => write!(f, "{val} MHz"),
+            Frequency::GHz(val) => write!(f, "{val} GHz"),
         }
     }
 }

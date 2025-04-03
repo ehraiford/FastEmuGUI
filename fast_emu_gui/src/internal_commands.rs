@@ -1,4 +1,4 @@
-use crate::DisplayFormat;
+use crate::{DisplayFormat, emu_data::Frequency, frame_buffer::MutexWrapper};
 
 pub(crate) enum InternalCommand<'a> {
     UpdateRegisterValue {
@@ -13,5 +13,7 @@ pub(crate) enum InternalCommand<'a> {
     },
     UpdateFrameBuffer {
         buffer: &'a [u8],
+        mutex: MutexWrapper,
     },
+    SetFrequency(Frequency),
 }

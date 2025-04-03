@@ -1,3 +1,4 @@
+use crate::frame_buffer::MutexWrapper;
 use crate::internal_commands::InternalCommand;
 use crate::{App, DisplayFormat, EMU_DATA, SENDER};
 use std::ffi::CStr;
@@ -38,7 +39,7 @@ pub extern "C" fn update_register_format(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn update_frame_buffer(data: *const u8, len: usize) {
+pub extern "C" fn update_frame_buffer_with_pointer(data: *const u8, len: usize, mutex: MutexWrapper) {
     let buffer = unsafe { std::slice::from_raw_parts(data, len) };
-    let _ = SENDER.send(InternalCommand::UpdateFrameBuffer { buffer });
+    let _ = SENDER.send(InternalCommand::UpdateFrameBuffer { buffer, mutex });
 }

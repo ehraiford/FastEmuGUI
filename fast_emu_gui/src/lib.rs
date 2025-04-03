@@ -1,6 +1,6 @@
 use crossbeam::channel;
 use eframe::egui::{self, TextureOptions};
-use emu_data::{EmuData, test_data};
+use emu_data::EmuData;
 use internal_commands::InternalCommand;
 use once_cell::sync::Lazy;
 use registers::DisplayFormat;
@@ -15,7 +15,7 @@ pub mod internal_commands;
 pub mod registers;
 pub mod yaml;
 
-static EMU_DATA: Lazy<Arc<Mutex<EmuData>>> = Lazy::new(|| Arc::new(Mutex::new(test_data())));
+static EMU_DATA: Lazy<Arc<Mutex<EmuData>>> = Lazy::new(|| Arc::new(Mutex::new(EmuData::new())));
 
 static SENDER: Lazy<channel::Sender<InternalCommand>> = Lazy::new(|| {
     let (sender, receiver): (channel::Sender<InternalCommand>, channel::Receiver<InternalCommand>) =
@@ -38,6 +38,13 @@ struct App {
 impl App {
     fn render_ui(&self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let state = self.state.lock().unwrap();
+
+        if let Some(frequency) = &state.target_frequency {
+            ui.group(|ui| {
+                ui.label(frequency.to_string());
+                ui.separator();
+            });
+        }
 
         for (set_name, set) in &state.register_sets {
             ui.group(|ui| {
