@@ -39,7 +39,7 @@ pub extern "C" fn update_register_format(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn update_frame_buffer_with_pointer(data: *const u8, len: usize, mutex: MutexWrapper) {
+pub extern "C" fn update_frame_buffer(data: *const u8, len: usize) {
     let buffer = unsafe { std::slice::from_raw_parts(data, len) };
-    let _ = SENDER.send(InternalCommand::UpdateFrameBuffer { buffer, mutex });
+    let _ = SENDER.send(InternalCommand::UpdateFrameBuffer { buffer });
 }

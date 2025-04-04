@@ -13,7 +13,6 @@ pub(crate) enum InternalCommand<'a> {
     },
     UpdateFrameBuffer {
         buffer: &'a [u8],
-        mutex: MutexWrapper,
     },
     SetFrequency(Frequency),
 }

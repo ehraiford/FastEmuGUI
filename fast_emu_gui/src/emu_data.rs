@@ -35,9 +35,9 @@ impl EmuData {
                     reg.update_display_format(new_format);
                 }
             },
-            InternalCommand::UpdateFrameBuffer { buffer, mutex } => {
+            InternalCommand::UpdateFrameBuffer { buffer } => {
                 if let Some(ref mut frame_buffer) = self.frame_buffer {
-                    if let Err(error) = frame_buffer.update_frame_buffer(buffer, mutex) {
+                    if let Err(error) = frame_buffer.update_frame_buffer(buffer) {
                         println!("{}", error);
                     }
                 }
